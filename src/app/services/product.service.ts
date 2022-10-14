@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Product } from '../models/product.interface';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError, catchError, delay, shareReplay, tap, map } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable, delay, shareReplay, tap, map, flatMap, mergeMap, filter } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -17,13 +17,31 @@ export class ProductService {
     this.initProducts();
   }
 
-    initProducts(): void {
-      this.products$ = this
-                        .http
-                        .get<Product[]>(this.baseUrl)
-                        .pipe(
-                          tap(data => console.table(data))
-                        );
-    }
+  insertProduct(newProduct: Product): Observable<Product> {
+    return this.http.post<Product>(this.baseUrl, newProduct);
+  }
+
+  getProductById(id: number): Observable<Product> {
+    return this
+              .products$
+              .pipe(
+                // mergeMap(p => p),
+                // filter(product => product.id == id)
+                map(products => products.find(product => product.id == id))
+              )
+  }
+
+  initProducts(): void {
+    let url:string = this.baseUrl + '?$orderby=ModifiedDate%20desc';
+
+    this.products$ = this
+                      .http
+                      .get<Product[]>(url)
+                      .pipe(
+                        tap(data => console.table(data)),
+                        delay(1500), // Just to test!
+                        shareReplay()
+                      );
+  }
 
 }
